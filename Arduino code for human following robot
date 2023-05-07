@@ -1,0 +1,130 @@
+#include <NewPing.h>
+
+#define trig 11
+#define echo 12
+#define buzzer 13
+
+#define max_forward_speed 75
+#define adjustment_speed 50
+
+
+#define min_distance 10
+#define max_distance 30
+
+#define ir_right 2
+#define ir_left 3
+
+//Right motor
+int enableRightMotor=5;
+int rightMotorPin1=7;
+int rightMotorPin2=8;
+
+//Left motor
+int enableLeftMotor=6;
+int leftMotorPin1=9;
+int leftMotorPin2=10;
+
+NewPing UltrasonicSensor(trig, echo, 400);
+
+int distance;
+int safety_distance;
+long duration;
+
+void setup()
+{
+  pinMode(enableRightMotor, OUTPUT);
+  pinMode(rightMotorPin1, OUTPUT);
+  pinMode(rightMotorPin2, OUTPUT);
+
+  pinMode(enableLeftMotor, OUTPUT);
+  pinMode(leftMotorPin1, OUTPUT);
+  pinMode(leftMotorPin2, OUTPUT);
+
+  pinMode(ir_right, INPUT);
+  pinMode(ir_left, INPUT);
+  rotateMotor(0,0);   
+
+  //Serial.begin(9600);
+}
+
+
+void loop()
+{
+  int distance = UltrasonicSensor.ping_cm();
+  int rightIRSensorValue = digitalRead(ir_right);
+  int leftIRSensorValue = digitalRead(ir_left);
+
+  int duration = pulseIn(echo, HIGH);
+  distance = duration*0.034/2;
+  int safetyDistance = distance;
+
+  //if distace is in range buzzer sound is on
+  if (safetyDistance <= 20)   
+  {
+   digitalWrite(buzzer, HIGH);
+  }
+  else
+  {
+   digitalWrite(buzzer, LOW);
+  }
+
+
+  //if right IR sensor detect signal turn right (increase left motor speed) 
+  if (rightIRSensorValue == LOW && leftIRSensorValue == HIGH )
+  {
+      rotateMotor(max_forward_speed - adjustment_speed, max_forward_speed + adjustment_speed ); 
+  }
+  //if left IR sensor detect signal turn left (increase right motor speed) 
+  else if (rightIRSensorValue == HIGH && leftIRSensorValue == LOW )
+  {
+      rotateMotor(max_forward_speed + adjustment_speed, max_forward_speed - adjustment_speed ); 
+  }
+  //If distance is between min and max then go straight
+  else if (distance >= min_distance && distance <= max_distance)
+  {
+    rotateMotor(max_forward_speed, max_forward_speed);
+  }
+  //stop the motors
+  else 
+  {
+    rotateMotor(0, 0);
+  }
+}
+
+
+void rotateMotor(int rightMotorSpeed, int leftMotorSpeed)
+{
+  if (rightMotorSpeed < 0)
+  {
+    digitalWrite(rightMotorPin1,LOW);
+    digitalWrite(rightMotorPin2,HIGH);    
+  }
+  else if (rightMotorSpeed > 0)
+  {
+    digitalWrite(rightMotorPin1,HIGH);
+    digitalWrite(rightMotorPin2,LOW);      
+  }
+  else
+  {
+    digitalWrite(rightMotorPin1,LOW);
+    digitalWrite(rightMotorPin2,LOW);      
+  }
+
+  if (leftMotorSpeed < 0)
+  {
+    digitalWrite(leftMotorPin1,LOW);
+    digitalWrite(leftMotorPin2,HIGH);    
+  }
+  else if (leftMotorSpeed > 0)
+  {
+    digitalWrite(leftMotorPin1,HIGH);
+    digitalWrite(leftMotorPin2,LOW);      
+  }
+  else 
+  {
+    digitalWrite(leftMotorPin1,LOW);
+    digitalWrite(leftMotorPin2,LOW);      
+  }
+  analogWrite(enableRightMotor, abs(rightMotorSpeed));
+  analogWrite(enableLeftMotor, abs(leftMotorSpeed));    
+}
